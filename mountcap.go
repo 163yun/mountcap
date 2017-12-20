@@ -1,30 +1,39 @@
 package mountcap
 
 import (
-	"fmt"
+	"github.com/golang/glog"
 	syscall "golang.org/x/sys/unix"
 	"os"
 	"unsafe"
 )
 
-func PollMount(changed chan bool) {
+func PollMount(changed chan bool, quit chan error) {
 	f, _ := os.Open("/proc/self/mountinfo")
 	defer f.Close()
 	fdOri := f.Fd()
 	var fd *int32 = (*int32)(unsafe.Pointer(&fdOri))
-	pollFd := syscall.PollFd{
+	pollFds := make([]syscall.PollFd, 1)
+	pollFds[0] = syscall.PollFd{
 		Fd:      *fd,
 		Events:  syscall.POLLERR | syscall.POLLPRI,
 		Revents: 0,
 	}
 	for {
-		ret, _ := syscall.Poll([]syscall.PollFd{pollFd}, -1)
+		//set a minute so that this loop will check if it should exit
+		ret, _ := syscall.Poll(pollFds, 60000)
 		if ret >= 0 {
-			fmt.Printf("pollfd: %+v, get and: %v", pollFd, pollFd.Revents&syscall.POLLERR)
-			//if (pollFd.Revents & syscall.POLLERR) == 1 {
-			changed <- true
-			//}
+			if (pollFds[0].Revents & syscall.POLLERR) == 8 {
+				changed <- true
+			}
 		}
-		pollFd.Revents = 0
+		pollFds[0].Revents = 0
+
+		select {
+		case <-quit:
+			glog.Infoln("recive quit msg.")
+			return
+		default:
+			//do nothing and go next poll.
+		}
 	}
 }
