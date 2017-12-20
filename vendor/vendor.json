@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "ltPsvPB1hRUFXj1W7SWFHVy1GjQ=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "67f277b6fe017c42fc3b4a445edc999dd99edd58",
+			"revisionTime": "2016-10-10T22:15:02Z"
+		}
+	],
+	"rootPath": "github.com/163yun/mountcap"
+}
