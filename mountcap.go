@@ -37,3 +37,47 @@ func PollMount(changed chan bool, quit chan error) {
 		}
 	}
 }
+
+func PollMountEver() bool {
+	f, _ := os.Open("/proc/self/mountinfo")
+	defer f.Close()
+	fdOri := f.Fd()
+	var fd *int32 = (*int32)(unsafe.Pointer(&fdOri))
+	pollFds := make([]syscall.PollFd, 1)
+	pollFds[0] = syscall.PollFd{
+		Fd:      *fd,
+		Events:  syscall.POLLERR | syscall.POLLPRI,
+		Revents: 0,
+	}
+	for {
+		//set a minute so that this loop will check if it should exit
+		ret, _ := syscall.Poll(pollFds, 6000)
+		if ret >= 0 {
+			if (pollFds[0].Revents & syscall.POLLERR) == 8 {
+				return true
+			}
+		}
+		pollFds[0].Revents = 0
+	}
+}
+
+func PollMountWithTimeout(msTimeout int) bool {
+	f, _ := os.Open("/proc/self/mountinfo")
+	defer f.Close()
+	fdOri := f.Fd()
+	var fd *int32 = (*int32)(unsafe.Pointer(&fdOri))
+	pollFds := make([]syscall.PollFd, 1)
+	pollFds[0] = syscall.PollFd{
+		Fd:      *fd,
+		Events:  syscall.POLLERR | syscall.POLLPRI,
+		Revents: 0,
+	}
+	//set a minute so that this loop will check if it should exit
+	ret, _ := syscall.Poll(pollFds, msTimeout)
+	if ret >= 0 {
+		if (pollFds[0].Revents & syscall.POLLERR) == 8 {
+			return true
+		}
+	}
+	return false
+}
